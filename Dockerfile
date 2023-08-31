@@ -2,7 +2,7 @@
 FROM alpine:latest
 
 # Install jq and other required packages
-RUN apk add --no-cache jq coreutils base64
+RUN apk add --no-cache jq coreutils
 
 # Set the working directory in the container
 WORKDIR /app
