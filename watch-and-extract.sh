@@ -8,24 +8,33 @@ DOMAIN="${DOMAIN:-www.example.com}"
 ACME_FILE_NAME="${ACME_FILE_NAME:-ACME.json}"
 OUTPUT_DIR="${OUTPUT_DIR:-/app/output}"
 
-while :; do
-  ACME_FILE_PATH="$WATCH_DIR/$ACME_FILE_NAME"
-  DOMAIN_DIR="$OUTPUT_DIR/$DOMAIN"
+# Loop indefinitely
+while true; do
 
-  # Create output directory for domain if it does not exist
-  mkdir -p "$DOMAIN_DIR"
+  # Check if the ACME.json file exists in the watch directory
+  if [ -f "${WATCH_DIR}/${ACME_FILE_NAME}" ]; then
 
-  if [ -f "$ACME_FILE_PATH" ]; then
-    # Extract and decode certificate
-    cat "$ACME_FILE_PATH" | jq -r "$PROVIDER_PATH | select(.domain.main == \"$DOMAIN\").certificate" | base64 -d > "$DOMAIN_DIR/fullchain.pem"
+    # Extract the fullchain and privkey using jq
+    FULLCHAIN=$(jq -r "select(.Domain.Main==\"${DOMAIN}\") | ${PROVIDER_PATH}.fullchain" "${WATCH_DIR}/${ACME_FILE_NAME}")
+    PRIVKEY=$(jq -r "select(.Domain.Main==\"${DOMAIN}\") | ${PROVIDER_PATH}.key" "${WATCH_DIR}/${ACME_FILE_NAME}")
 
-    # Extract and decode private key
-    cat "$ACME_FILE_PATH" | jq -r "$PROVIDER_PATH | select(.domain.main == \"$DOMAIN\").key" | base64 -d > "$DOMAIN_DIR/privatekey.pem"
+    # Check if jq returned anything
+    if [ -z "$FULLCHAIN" ] || [ -z "$PRIVKEY" ]; then
+      echo "Certificate for domain ${DOMAIN} not found. Please try another domain name..."
+      echo "Skipping..."
+    else
+      # Create output directory if it doesn't exist
+      mkdir -p "${OUTPUT_DIR}/${DOMAIN}"
 
-    echo "Extracted certificate and key for $DOMAIN to $DOMAIN_DIR"
+      # Save the fullchain and privkey to files
+      echo "$FULLCHAIN" | base64 -d > "${OUTPUT_DIR}/${DOMAIN}/fullchain.pem"
+      echo "$PRIVKEY" | base64 -d > "${OUTPUT_DIR}/${DOMAIN}/privkey.pem"
+      echo "Certificates for ${DOMAIN} have been extracted."
+    fi
   else
-    echo "$ACME_FILE_PATH not found. Waiting..."
+    echo "File ${WATCH_DIR}/${ACME_FILE_NAME} not found. Skipping..."
   fi
 
-  sleep $INTERVAL
+  # Sleep for the defined interval before the next iteration
+  sleep ${INTERVAL}
 done
