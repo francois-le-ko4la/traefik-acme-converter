@@ -3,12 +3,10 @@ services:
   acme-sidecar:
     image: shobuprime/traefik-acme-converter
     environment:
-      - WATCH_DIR=/custom/dir
-      - INTERVAL=10
-      - PROVIDER_PATH=.customProvider.Certificates[]
-      - DOMAIN=custom.example.com
-      - ACME_FILE_NAME=CustomACME.json
-      - OUTPUT_DIR=/custom/output
+      - WATCH_DIR=/certs
+      - PROVIDER_PATH=.cloudflare.Certificates[]
+      - DOMAIN=*.example.com
+      - ACME_FILE_NAME=cloudflare.json
     volumes:
-      - /path/to/watch:/custom/dir
-      - /path/to/output:/custom/output
+      - /custom/example/certs:/certs:ro
+      - /custom/example/_ssl/:/app/output
