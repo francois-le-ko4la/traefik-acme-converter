@@ -6,6 +6,8 @@ INTERVAL="${INTERVAL:-1800}"
 PROVIDER="${PROVIDER:-ACME}"
 ACME_FILE_NAME=${PROVIDER}.json
 OUTPUT_DIR="${OUTPUT_DIR:-/app/output}"
+USER_UID="${USER_UID}:-1000"
+USER_GID="${USER_GID}:-1000"
 
 # Loop indefinitely
 while true; do
@@ -38,6 +40,7 @@ while true; do
         echo "$PRIVKEY" | base64 -d > "${OUTPUT_DIR}/${DOMAIN}/privkey.pem"
 
         # Setting the appropriate file permissions
+        chown ${USER_UID}:${USER_GID} ${OUTPUT_DIR}/${DOMAIN}/*
         chmod 600 ${OUTPUT_DIR}/${DOMAIN}/*
 
         echo "Certificates for ${DOMAIN} have been extracted."
