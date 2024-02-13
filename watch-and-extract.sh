@@ -24,6 +24,12 @@ while true; do
     echo "Looping through all the domains..."
     for i in $(seq 0 $(($CERTIFICATE_COUNT -1))); do
       DOMAIN=$(jq -r ".${PROVIDER}.Certificates[$i].domain.main" "${WATCH_DIR}/${ACME_FILE_NAME}")
+      
+      # Check if the domain starts with a wildcard and remove it
+      if [ "${DOMAIN:0:2}" = "*." ]; then
+        DOMAIN=${DOMAIN:2}
+      fi
+      
       FULLCHAIN=$(jq -r ".${PROVIDER}.Certificates[$i].certificate" "${WATCH_DIR}/${ACME_FILE_NAME}")
       PRIVKEY=$(jq -r ".${PROVIDER}.Certificates[$i].key" "${WATCH_DIR}/${ACME_FILE_NAME}")
 
