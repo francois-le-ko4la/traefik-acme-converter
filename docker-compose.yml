@@ -1,12 +1,16 @@
 version: '3'
 services:
-  acme-sidecar:
-    image: shobuprime/traefik-acme-converter
+  traefik-acme-converter:
+    container_name: traefik-acme-converter
+    image: ko4la/traefik-acme-converter
     environment:
-      - WATCH_DIR=/certs
-      - PROVIDER_PATH=.cloudflare.Certificates[]
-      - DOMAIN=*.example.com
-      - ACME_FILE_NAME=cloudflare.json
+      - PROVIDER=acme
+      - WEBHOOK_URL=${TRAEFIK_ACME_DISCORD_WH}
+      - USER_UID=0
+      - USER_GID=0
     volumes:
-      - /custom/example/certs:/certs:ro
-      - /custom/example/_ssl/:/app/output
+      - ${DOCKER_ROOT}/traefik/letsencrypt:/traefik/letsencrypt:ro
+      - /etc/letsencrypt/live:/app/output
+    networks:
+      admin-net:
+        ipv4_address: 172.20.0.6
