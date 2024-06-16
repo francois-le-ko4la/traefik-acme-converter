@@ -22,9 +22,8 @@ You can specify several environment variables to customize the behavior:
 
 - `WATCH_DIR`: The directory to watch for the ACME JSON file. Defaults to `/traefik/certs`. This directory must be used in your volume definition to see the Traefik json file.
 - `OUTPUT_DIR`: The directory where the certificates and key files should be saved. Defaults to `/app/output`. This directory must be used in your volume definition to see the Traefik json file.
-- `CERT_RESOLVER`: The resolver is responsible for retrieving certificates from an ACME server. Defaults to `myresolver`. 
-- `PROVIDER`: Provider name. Defaults to `ACME`.
-- `ACME_FILE_NAME`: Automatically constructed from the `PROVIDER` variable. Defaults to `ACME.json` (or `${PROVIDER}.json`). If your filename is different than `${PROVIDER}.json` you can define another filename.
+- `PROVIDER_NAME`: Provider full name with the resolver name. Defaults to `myresolver.acme`.
+- `ACME_FILE_NAME`: Automatically constructed from the `PROVIDER_NAME` variable. Defaults to `acme.json`. If your filename is different then you can define another filename.
 - `WEBHOOK_URL`: The webhook url to send notifications (Discord)
 - `USER_UID` / `USER_GID`
 
@@ -58,12 +57,13 @@ certificatesResolvers:
 In this example we define this docker-compose:
 ```yaml
 version: '3'
+
 services:
   traefik-acme-converter:
     container_name: traefik-acme-converter
     image: ko4la/traefik-acme-converter
     environment:
-      - PROVIDER=acme                                     # PROVIDER = acme and ACME_FILE_NAME = acme.json
+      - PROVIDER_NAME=myresolver.acme.                    # RESOLVER = myresolver and ACME_FILE_NAME = acme.json
       - WEBHOOK_URL=${TRAEFIK_ACME_DISCORD_WH}            # Our discord webhook
       - USER_UID=0                                        # USER_UID
       - USER_GID=0                                        # USER_GID

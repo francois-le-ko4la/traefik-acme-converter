@@ -2,8 +2,9 @@
 
 # Variables with default values
 WATCH_DIR="/traefik/letsencrypt"
-PROVIDER="${PROVIDER:-ACME}"
-CERT_RESOLVER="${CERT_RESOLVER:-myresolver}"
+PROVIDER_NAME="${PROVIDER_NAME:-myresolver.acme}"
+CERT_RESOLVER=${PROVIDER_NAME%.*} # myresolver
+PROVIDER=${PROVIDER_NAME#*.} # acme
 ACME_FILE_NAME="${ACME_FILE_NAME:-${PROVIDER}.json}"
 OUTPUT_DIR="${OUTPUT_DIR:-/app/output}"
 USER_UID="${USER_UID:-1000}"
@@ -63,7 +64,7 @@ check_acme_file() {
 }
 
 extract_certificates() {
-  # Getting the length of the "Certificates" array for ${PROVIDER}
+  # Getting the length of the "Certificates" array for ${PROVIDER_NAME}
   CERTIFICATE_COUNT=$(jq -r ".${CERT_RESOLVER}.Certificates | length" "${WATCH_DIR}/${ACME_FILE_NAME}")
 
   log "INFO" "$(printf "$INFO_LOOP_DOMAINS" "$CERTIFICATE_COUNT")"
