@@ -10,11 +10,13 @@ OUTPUT_DIR="${OUTPUT_DIR:-/app/output}"
 USER_UID="${USER_UID:-1000}"
 USER_GID="${USER_GID:-1000}"
 WEBHOOK_URL="${WEBHOOK_URL:-}"
+SYNC_FILE="${OUTPUT_DIR}/traefik_acme_exporter_last_sync"
 
 # Error and log messages
 ERR_FILE_NOT_FOUND="File ${ACME_FILE_NAME} not found. Skipping..."
 ERR_CERT_NOT_FOUND="Certificate for domain %s not found. Skipping..."
 ERR_NOTIFY="Failed to send notification. HTTP code:"
+INFO_SKIP="Certificates are up to date. Skipping extraction."
 INFO_CERT_EXTRACTED="Certificates for %s have been extracted."
 INFO_WAITING="Waiting for modifications to ${ACME_FILE_NAME}..."
 INFO_MODIFIED="Modification detected. Refreshing certificates..."
@@ -63,6 +65,23 @@ check_acme_file() {
   fi
 }
 
+should_extract_certificates() {
+  if [ ! -f "$SYNC_FILE" ]; then
+    return 0 # No sync file, so we should extract certificates
+  fi
+  ACME_MOD_TIME=$(stat -c %Y "${WATCH_DIR}/${ACME_FILE_NAME}")
+  SYNC_MOD_TIME=$(stat -c %Y "$SYNC_FILE")
+  if [ "$ACME_MOD_TIME" -gt "$SYNC_MOD_TIME" ]; then
+    return 0 # ACME file is more recent, extract certificates
+  else
+    return 1 # ACME file is not more recent, skip extraction
+  fi
+}
+
+update_sync_file() {
+  touch "$SYNC_FILE"
+}
+
 extract_certificates() {
   # Getting the length of the "Certificates" array for ${PROVIDER_NAME}
   CERTIFICATE_COUNT=$(jq -r ".${CERT_RESOLVER}.Certificates | length" "${WATCH_DIR}/${ACME_FILE_NAME}")
@@ -106,7 +125,14 @@ check_acme_file
 # Initial extraction
 log "INFO" "$INFO_START"
 send_webhook_notification "$WEBHOOK_URL" "$INFO_START"
-extract_certificates
+
+if should_extract_certificates; then
+  extract_certificates
+  update_sync_file
+else
+  log "INFO" "$INFO_SKIP"
+  send_webhook_notification "$WEBHOOK_URL" "$INFO_SKIP"
+fi
 
 # Loop indefinitely
 while true; do
@@ -119,4 +145,5 @@ while true; do
   log "INFO" "$INFO_MODIFIED"
   send_webhook_notification "$WEBHOOK_URL" "$INFO_MODIFIED"
   extract_certificates
+  update_sync_file
 done
